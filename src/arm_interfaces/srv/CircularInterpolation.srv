@@ -1,0 +1,24 @@
+# --- 请求 (Request) ---
+# 起点坐标 P0
+float64 start_x
+float64 start_y
+float64 start_z
+
+# 途径点坐标 P1 (用于确定空间圆平面和弧度)
+float64 x1
+float64 y1
+float64 z1
+
+# 终点坐标 P2
+float64 x2
+float64 y2
+float64 z2
+
+# 运动参数
+float64 velocity
+float64 sample_time
+
+---
+# --- 响应 (Response) ---
+bool success
+string message

@@ -30,7 +30,7 @@ class MotorSerial(Node):
         
         # --- 新增：目标角度缓存与比对容差 ---
         self.target_angles = [0.0, 0.0, 0.0]  # 存储最近一次订阅到的目标
-        self.angle_tolerance = 0.5            # 到达判定容差（度）
+        self.angle_tolerance = 1            # 到达判定容差（度）
         
         # 3. 连接串口
         if not self.connect_serial():
@@ -71,7 +71,8 @@ class MotorSerial(Node):
         
         try:
             # 格式化命令
-            cmd = f"RPM:{msg.motor_1:.2f},{msg.motor_2:.2f},{msg.motor_3:.2f}\n"
+         # 使用 int() 强制转换为整数，去掉可能存在的小数点
+            cmd = f"T,{int(msg.motor_1)},N,{int(msg.motor_2)},N,{int(msg.motor_3)}"
             
             with self.serial_lock:
                 if self.ser and self.ser.is_open:
@@ -87,37 +88,48 @@ class MotorSerial(Node):
     def process_motor_data(self, data_str):
         """处理电机反馈并进行到达比对"""
         try:
-            # 假设串口协议格式为 DATA:角1,角2,角3
-            if data_str.startswith('DATA:'):
-                values_str = data_str[5:].split(',')
-                if len(values_str) >= 3:
+            # 1. 更加健壮的提取方式：先去掉前缀，再按逗号分割
+            # 这样即使 DATA: 后面有空格也能处理
+            payload = data_str.replace('DATA:', '').strip()
+            
+            # 2. 兼容中文逗号和多余空格，并过滤空字符串
+            values_str = [s.strip() for s in payload.replace('占', ',').replace('，', ',').split(',')]
+            
+            if len(values_str) >= 3:
+                # 3. 转换并捕获可能的转换异常
+                try:
                     curr_1 = float(values_str[0])
                     curr_2 = float(values_str[1])
                     curr_3 = float(values_str[2])
-                    
-                    # --- 核心修改：比较当前值与目标值 ---
-                    diffs = [
-                        abs(curr_1 - self.target_angles[0]),
-                        abs(curr_2 - self.target_angles[1]),
-                        abs(curr_3 - self.target_angles[2])
-                    ]
-                    
-                    # 判断是否所有关节都进入容差范围
-                    # 1为到达，0为未到达
-                    is_reached = 1 if all(d < self.angle_tolerance for d in diffs) else 0
-                    
-                    # 封装消息发布
-                    now_msg = Pointnow()
-                    now_msg.x = curr_1
-                    now_msg.y = curr_2
-                    now_msg.z = curr_3
-                    now_msg.is_reached = is_reached
-                    
-                    self.joint_now_pub.publish(now_msg)
-                    
-                    # 可视化反馈
-                    if is_reached:
-                        self.get_logger().debug("状态：已到达目标位置")
+                except ValueError:
+                    self.get_logger().warn(f"无法将数据转换为浮点数: {values_str}")
+                    return
+
+                # --- 核心计算 ---
+                # 计算欧氏距离或者逐个角度比对
+                diffs = [
+                    abs(curr_1 - self.target_angles[0]),
+                    abs(curr_2 - self.target_angles[1]),
+                    abs(curr_3 - self.target_angles[2])
+                ]
+                
+                # 容差判定
+                is_reached = 1 if all(d < self.angle_tolerance for d in diffs) else 0
+                
+                # 4. 发布消息
+                now_msg = Pointnow()
+                now_msg.x = curr_1
+                now_msg.y = curr_2
+                now_msg.z = curr_3
+                now_msg.is_reached = int(is_reached) # 确保是整数类型
+                
+                self.joint_now_pub.publish(now_msg)
+                
+                # 每收到 10 条数据打印一次，避免频繁打印卡顿
+                # 或者仅在到达状态切换时打印
+                self.get_logger().info(f"发布成功: [{curr_1:.2f}, {curr_2:.2f}, {curr_3:.2f}] 到达:{is_reached}")
+            else:
+                self.get_logger().warn(f"数据段不足: 收到 {len(values_str)} 段")
                     
         except Exception as e:
             self.get_logger().error(f'处理电机数据失败: {e}')

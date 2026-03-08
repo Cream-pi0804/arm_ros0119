@@ -30,7 +30,7 @@ class MotorSerial(Node):
         
         # --- 新增：目标角度缓存与比对容差 ---
         self.target_angles = [0.0, 0.0, 0.0]  # 存储最近一次订阅到的目标
-        self.angle_tolerance = 1            # 到达判定容差（度）
+        self.angle_tolerance = 2            # 到达判定容差（度）
         
         # 3. 连接串口
         if not self.connect_serial():
@@ -72,7 +72,7 @@ class MotorSerial(Node):
         try:
             # 格式化命令
          # 使用 int() 强制转换为整数，去掉可能存在的小数点
-            cmd = f"T,{int(msg.motor_1)},N,{int(msg.motor_2)},N,{int(msg.motor_3)}"
+            cmd = f"T,{msg.motor_1},N,{msg.motor_2},N,{msg.motor_3}"
             
             with self.serial_lock:
                 if self.ser and self.ser.is_open:
@@ -106,16 +106,27 @@ class MotorSerial(Node):
                     return
 
                 # --- 核心计算 ---
-                # 计算欧氏距离或者逐个角度比对
-                diffs = [
-                    abs(curr_1 - self.target_angles[0]),
-                    abs(curr_2 - self.target_angles[1]),
-                    abs(curr_3 - self.target_angles[2])
-                ]
-                
-                # 容差判定
-                is_reached = 1 if all(d < self.angle_tolerance for d in diffs) else 0
-                
+                # 1. 分别计算三个电机的脉冲误差
+                diff_1 = abs(curr_1 - self.target_angles[0])
+                diff_2 = abs(curr_2 - self.target_angles[1])
+                diff_3 = abs(curr_3 - self.target_angles[2])
+
+                # 2. 逐个判断是否到位
+                # 注意：此时的 self.angle_tolerance 应该是脉冲单位（例如 5个脉冲以内）
+                reach_1 = diff_1 < self.angle_tolerance
+                reach_2 = diff_2 < self.angle_tolerance
+                reach_3 = diff_3 < self.angle_tolerance
+
+                # 3. 汇总判定：只有全部为 True 时，is_reached 才为 1
+                if reach_1: # and reach_2 and reach_3:
+                    is_reached = 1
+                else:
+                    is_reached = 0
+
+                # --- 调试输出 (可选) ---
+                # 这样你可以一眼看出是哪个电机没到位
+                self.get_logger().info(f"实时误差 -> M1:{diff_1:.1f}, M2:{diff_2:.1f}, M3:{diff_3:.1f}")
+                                
                 # 4. 发布消息
                 now_msg = Pointnow()
                 now_msg.x = curr_1

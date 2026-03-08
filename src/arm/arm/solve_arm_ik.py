@@ -113,16 +113,24 @@ class IKServiceNode(Node):
         if solution is not None:
             # 2. 发布关节角度
             joint_msg = Jointangle()
-            joint_msg.motor_1 = float(np.degrees(solution[0]))
-            joint_msg.motor_2 = float(np.degrees(solution[1]))
-            joint_msg.motor_3 = float(np.degrees(solution[2]))
-            
+         # 定义一个比例常数，方便后续修改（4069 应该是编码器分辨率）
+            PULSE_PER_DEGREE = 4069 / 360.0
+            # 转换并取整
+            joint_msg.motor_1 = int(round(float(np.degrees(solution[0])) * PULSE_PER_DEGREE))
+            joint_msg.motor_2 = int(round(float(np.degrees(solution[1])) * PULSE_PER_DEGREE))
+            joint_msg.motor_3 = int(round(float(np.degrees(solution[2])) * PULSE_PER_DEGREE))
+                        
             # 在发布前，先清除“完成”标志，防止收到上一条指令的完成信号
             self.move_done_event.clear()
             
             self.joint_pub.publish(joint_msg)
+            self.get_logger().info(
+                        f'--- 目标脉冲整数值 --- \n'
+                        f'M1: {joint_msg.motor_1}\n'
+                        f'M2: {joint_msg.motor_2}\n'
+                        f'M3: {joint_msg.motor_3}'
+                    )
             self.get_logger().info(f'2. IK求解成功，已发布控制指令，等待机械臂到位...')
-            
             # 3. 阻塞等待到位信号 (设置超时时间，例如 10 秒)
             timeout_sec = 10.0
             is_completed = self.move_done_event.wait(timeout=timeout_sec)

@@ -65,7 +65,7 @@ class UnifiedLinearServer(Node):
 
         self.stop_requested = False
         velocity = max(request.velocity, 0.01)
-        sample_time = max(request.sample_time, 0.5)
+        sample_time = max(request.sample_time, 0.05)
 
         success, message = self.execute_linear_move(start_pt, target_pt, velocity, sample_time)
         

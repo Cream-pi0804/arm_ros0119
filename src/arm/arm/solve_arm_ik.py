@@ -116,9 +116,22 @@ class IKServiceNode(Node):
          # 定义一个比例常数，方便后续修改（4069 应该是编码器分辨率）
             PULSE_PER_DEGREE = 4069 / 360.0
             # 转换并取整
-            joint_msg.motor_1 = int(round(float(np.degrees(solution[0])) * PULSE_PER_DEGREE))
-            joint_msg.motor_2 = int(round(float(np.degrees(solution[1])) * PULSE_PER_DEGREE))
-            joint_msg.motor_3 = int(round(float(np.degrees(solution[2])) * PULSE_PER_DEGREE))
+            # 关节1（范围 -600 ~ 600）
+            val1 = int(round(float(np.degrees(solution[0])) * PULSE_PER_DEGREE))
+            joint_msg.motor_1 = max(-600, min(val1, 600))
+
+            # 关节2（范围 0 ~ 10000）
+            val2 = int(round(float(np.degrees(solution[1])) *2* PULSE_PER_DEGREE))
+            joint_msg.motor_2 = max(0, min(val2, 10000))
+
+            # 关节3（范围 0 ~ 2600）
+            val3 = int(round(float(np.degrees(solution[2])) * PULSE_PER_DEGREE))
+            joint_msg.motor_3 = max(0, min(val3, 2600))
+
+
+            # joint_msg.motor_1 = int(round(float(np.degrees(solution[0])) * PULSE_PER_DEGREE))
+            # joint_msg.motor_2 = int(round(float(np.degrees(solution[1])) * PULSE_PER_DEGREE))
+            # joint_msg.motor_3 = int(round(float(np.degrees(solution[2])) * PULSE_PER_DEGREE))
                         
             # 在发布前，先清除“完成”标志，防止收到上一条指令的完成信号
             self.move_done_event.clear()
@@ -129,6 +142,9 @@ class IKServiceNode(Node):
                         f'M1: {joint_msg.motor_1}\n'
                         f'M2: {joint_msg.motor_2}\n'
                         f'M3: {joint_msg.motor_3}'
+                        f'M1: {float(np.degrees(solution[0]))}\n'
+                        f'M2: {float(np.degrees(solution[1]))}\n'
+                        f'M3: {float(np.degrees(solution[2]))}'
                     )
             self.get_logger().info(f'2. IK求解成功，已发布控制指令，等待机械臂到位...')
             # 3. 阻塞等待到位信号 (设置超时时间，例如 10 秒)

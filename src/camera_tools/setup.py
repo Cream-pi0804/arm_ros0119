@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
               'camera_pub=camera_tools.camera_pub:main',
               'roi_selector=camera_tools.roi_selector:main',
+              'aruco_detector=camera_tools.aruco_detector:main',
         ],
     },
 )

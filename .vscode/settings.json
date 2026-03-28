@@ -1,3 +1,30 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": [
+        {
+            "path": "src/arm",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        },
+        {
+            "path": "build/arm_interfaces/ament_cmake_python/arm_interfaces",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        },
+        {
+            "path": "build/camera_msgs/ament_cmake_python/camera_msgs",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        },
+        {
+            "path": "src/camera_tools",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        },
+        {
+            "path": ".",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        }
+    ]
 }

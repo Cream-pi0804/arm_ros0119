@@ -14,8 +14,8 @@ class ArucoDetectorNode(Node):
         # 这些参数必须从你之前的 camera_calibration 结果中获取
         # K 是相机矩阵: [[fx, 0, cx], [0, fy, cy], [0, 0, 1]]
         # fx, fy 是焦距（像素单位）；cx, cy 是光学中心（主点）
-        self.camera_matrix = np.array([[921.23, 0.0, 640.0], 
-                                       [0.0, 921.23, 360.0], 
+        self.camera_matrix = np.array([[1443.903630, 1.202746, 1295.131657], 
+                                       [0.0, 1448.206356, 971.550376], 
                                        [0.0, 0.0, 1.0]], dtype=np.float32)
         
         # D 是畸变系数: [k1, k2, p1, p2, k3]
@@ -24,14 +24,14 @@ class ArucoDetectorNode(Node):
 
         # --- 2. ArUco 字典与检测参数 ---
         # 选择字典：DICT_4X4_50 表示标记是 4x4 网格，共有 50 种不同的 ID
-        self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_100)
         # 默认检测参数（包含阈值处理、轮廓过滤等）
         self.aruco_params = cv2.aruco.DetectorParameters()
         
         # 标记的实际物理尺寸 (单位：米)
         # !!! 非常重要：如果你打印出的二维码边长是 5厘米，这里必须写 0.05
         # 这个值直接决定了 Z 轴（距离）的计算结果
-        self.marker_length = 0.05  
+        self.marker_length = 0.10  
 
         # --- 3. ROS 通信接口 ---
         self.bridge = CvBridge()
@@ -99,6 +99,7 @@ class ArucoDetectorNode(Node):
                 self.get_logger().info(f"检测到 ID: {ids[i][0]}, 距离相机: {pose_msg.position.z:.3f} 米")
 
         # --- 7. 本地可视化窗口 ---
+        frame = cv2.resize(frame, (0, 0), fx=0.35, fy=0.35)
         cv2.imshow("ArUco Monitor", frame)
         # 等待 1ms 以刷新窗口，按下任意键继续
         cv2.waitKey(1)

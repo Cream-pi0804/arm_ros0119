@@ -1,1 +1,31 @@
 ros2 run camera_calibration cameracalibrator --size 7x8 --square 0.017 --no-service-check -p chessboard --ros-args --remap image:=/raw_image
+
+
+[image]
+
+width
+2592
+
+height
+1944
+
+[narrow_stereo]
+
+camera matrix
+1443.903630 1.202746 1295.131657
+0.000000 1448.206356 971.550376
+0.000000 0.000000 1.000000
+
+distortion
+0.106390 0.892701 -5.806265 3.156656
+
+rectification
+1.000000 0.000000 0.000000
+0.000000 1.000000 0.000000
+0.000000 0.000000 1.000000
+
+projection
+1443.903630 1.202746 1295.131657 0.000000
+0.000000 1448.206356 971.550376 0.000000
+0.000000 0.000000 1.000000 0.000000
+

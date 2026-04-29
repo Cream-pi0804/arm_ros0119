@@ -96,7 +96,7 @@ class ArucoDetectorNode(Node):
                 self.pose_pub.publish(pose_msg)
                 
                 # 在终端实时打印距离信息
-                self.get_logger().info(f"检测到 ID: {ids[i][0]}, 距离相机: {pose_msg.position.z:.3f} 米")
+                self.get_logger().info(f"检测到 ID: {ids[i][0]}, 距离相机: {pose_msg.position.z:.3f} 米,x:{pose_msg.position.x:.3f},y:{pose_msg.position.y:.3f}")
 
         # --- 7. 本地可视化窗口 ---
         frame = cv2.resize(frame, (0, 0), fx=0.35, fy=0.35)

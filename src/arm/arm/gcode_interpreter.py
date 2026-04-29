@@ -245,13 +245,13 @@ def main(args=None):
 
     # 此处演示自动创建并执行一个测试文件
     file_path = 'motion_demo.txt'
-    with open(file_path, 'w') as f:
-        f.write("G17 ; 选择 XY 平面\n")
-        f.write("G01 X0.5 Y0.2 Z0.3 F0.2")
-        f.write("G01 X0.7 Y0.0 Z0.5 F0.2; 直线移至起点\n")
-        f.write("G03 X0.6 Y0.1 I-0.1 J0.0 F0.2; 逆时针画一个 90度圆弧\n")
-        # f.write("G19 ; 切换到 YZ 垂直面\n")
-        # f.write("G03 Y-0.1 Z0.5 J-0.1 K0.0 ; 在侧面画一个立着的弧\n")
+    # with open(file_path, 'w') as f:
+    #     f.write("G17 ; 选择 XY 平面\n")
+    #     f.write("G01 X0.5 Y0.2 Z0.3 F0.2")
+    #     f.write("G01 X0.7 Y0.0 Z0.5 F0.2; 直线移至起点\n")
+    #     f.write("G03 X0.6 Y0.1 I-0.1 J0.0 F0.2; 逆时针画一个 90度圆弧\n")
+    #     # f.write("G19 ; 切换到 YZ 垂直面\n")
+    #     # f.write("G03 Y-0.1 Z0.5 J-0.1 K0.0 ; 在侧面画一个立着的弧\n")
 
     try:
         # 开始执行任务

@@ -1,6 +1,10 @@
 ros2 run camera_calibration cameracalibrator --size 7x8 --square 0.017 --no-service-check -p chessboard --ros-args --remap image:=/raw_image
 
 
+
+sudo chmod 666 /dev/ttyUSB0
+
+
 [image]
 
 width

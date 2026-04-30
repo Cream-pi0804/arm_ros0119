@@ -22,7 +22,7 @@ class CameraProviderMultiThread(Node):
         self.reconnect_delay = self.get_parameter('reconnect_delay_s').get_parameter_value().double_value
         
         # ROS 2 组件
-        self.publisher_ = self.create_publisher(Image, self.publish_topic, 10)
+        self.publisher_ = self.create_publisher(Image, self.publish_topic, 30)
         self.bridge = CvBridge()
         
         # 摄像头连接和线程共享变量

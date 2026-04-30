@@ -8,6 +8,7 @@ import numpy as np
 
 # ROS2消息和服务
 from arm_interfaces.msg import Jointangle, Pointnow
+from arm_interfaces.msg import End
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.parameter import Parameter
 
@@ -38,11 +39,17 @@ class MotorSerial(Node):
         
         # 4. 创建订阅与发布
         self.jointangle_subscriber = self.create_subscription(
+            End, 
+            '/arm/endd', 
+            self.send_end_serial_command, 
+            10
+        )   
+        self.end_subscriber = self.create_subscription(
             Jointangle, 
             '/arm/Jointangle', 
             self.send_serial_command, 
             10
-        )   
+        ) 
         # 发布实际位置及到达标志
         self.joint_now_pub = self.create_publisher(Pointnow, '/arm/Pointnow', 10)
         
@@ -60,6 +67,28 @@ class MotorSerial(Node):
         
         self.get_logger().info(f'{node_name} 初始化完成，等待目标角度...')
 
+    def send_end_serial_command(self,msg):
+        """发送串口命令并更新目标缓存"""
+        # --- 核心修改：记录目标值 ---
+        if not self.check_serial_connection():
+            if not self.try_reconnect():
+                return False
+        
+        try:
+            # 格式化命令
+         # 使用 int() 强制转换为整数，去掉可能存在的小数点
+            cmd = f"K,{msg.end_vaule},N,{msg.reach_time}"
+            
+            with self.serial_lock:
+                if self.ser and self.ser.is_open:
+                    self.ser.write(cmd.encode('utf-8'))
+                    self.ser.flush()
+                    return True
+                else:
+                    return False
+        except Exception as e:
+            self.get_logger().error(f'发送异常: {e}')
+            return False
     def send_serial_command(self, msg):
         """发送串口命令并更新目标缓存"""
         # --- 核心修改：记录目标值 ---

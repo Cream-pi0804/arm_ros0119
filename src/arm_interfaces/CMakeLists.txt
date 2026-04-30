@@ -16,7 +16,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 "srv/LinearInterpolation.srv"
 "srv/CircularInterpolation.srv"
 "msg/Pointnow.msg"
-"msg/end.msg"
+"msg/End.msg"
  DEPENDENCIES builtin_interfaces
 )
 

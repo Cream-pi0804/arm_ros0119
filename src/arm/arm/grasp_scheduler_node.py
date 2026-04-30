@@ -3,10 +3,10 @@ from rclpy.node import Node
 import asyncio
 
 # 引入消息和服务定义
-from geometry_msgs.msg import Point          # 假设视觉发送的是 Point 消息
+from geometry_msgs.msg import Pose          # 假设视觉发送的是 Point 消息
 from std_msgs.msg import Int32               # 假设舵机使用 Int32 (1为抓取, 0为松开)
 from arm_interfaces.srv import Targetpoint   # 你自定义的 IK 服务
-
+from arm_interfaces.msg import End  
 class GraspSchedulerNode(Node):
     def __init__(self):
         super().__init__('grasp_scheduler_node')
@@ -21,8 +21,8 @@ class GraspSchedulerNode(Node):
         
         # A. 订阅视觉传来的目标位置 (假设话题名为 /vision/target_point)
         self.target_sub = self.create_subscription(
-            Point,
-            '/vision/target_point',
+            Pose,
+            '/vision/target_Pose',
             self.vision_callback,
             10
         )
@@ -31,7 +31,7 @@ class GraspSchedulerNode(Node):
         self.ik_client = self.create_client(Targetpoint, 'calculate_ik')
         
         # C. 创建舵机控制发布者 (假设话题名为 /arm/gripper)
-        self.gripper_pub = self.create_publisher(Int32, '/arm/gripper', 10)
+        self.gripper_pub = self.create_publisher(End, '/arm/endd', 10)
         
         self.get_logger().info('视觉抓取调度节点已启动，等待视觉目标...')
 
@@ -46,14 +46,14 @@ class GraspSchedulerNode(Node):
             
         self.is_busy = True
         self.get_logger().info('=====================================')
-        self.get_logger().info(f'接收到新视觉目标: x={msg.x:.3f}, y={msg.y:.3f}, z={msg.z:.3f}')
+        self.get_logger().info(f'接收到新视觉目标: x={msg.position.x:.3f}, y={msg.position.y:.3f}, z={msg.position.z:.3f}')
 
         try:
             # ----------------------------------------
             # 步骤 1: 调用 IK 服务前往【视觉目标点】
             # ----------------------------------------
             self.get_logger().info('步骤 1: 正在移动至抓取目标点...')
-            success = await self.call_ik_service(msg.x, msg.y, msg.z)
+            success = await self.call_ik_service(msg.position.x, msg.position.y, msg.position.z)
             if not success:
                 self.get_logger().error('无法到达目标点，抓取任务中止。')
                 return
@@ -62,7 +62,7 @@ class GraspSchedulerNode(Node):
             # 步骤 2: 执行舵机闭合 (抓取)
             # ----------------------------------------
             self.get_logger().info('步骤 2: 到达目标点，执行抓取...')
-            self.control_gripper(1)  # 1 表示闭合抓取 (根据你的舵机逻辑修改)
+            self.control_gripper(1,5000)  # 1 表示闭合抓取 (根据你的舵机逻辑修改)
             # 使用 asyncio.sleep 代替 time.sleep，不会阻塞节点其他回调
             await asyncio.sleep(1.5) 
 
@@ -83,7 +83,7 @@ class GraspSchedulerNode(Node):
             # 步骤 4: 执行舵机张开 (松开)
             # ----------------------------------------
             self.get_logger().info('步骤 4: 到达放置点，松开爪子...')
-            self.control_gripper(0)  # 0 表示松开张开
+            self.control_gripper(0,5000)  # 0 表示松开张开
             await asyncio.sleep(1.0) 
             
             self.get_logger().info('>>> 抓取放置流水线任务圆满完成！ <<<')
@@ -117,10 +117,11 @@ class GraspSchedulerNode(Node):
             self.get_logger().error(f'IK 服务反馈错误信息: {response.message}')
             return False
 
-    def control_gripper(self, action_code):
+    def control_gripper(self, action_code,action_time):
         """控制舵机张合的辅助函数"""
-        msg = Int32()
-        msg.data = action_code
+        msg = End()
+        msg.end_vaule = action_code
+        msg.reach_time = action_time
         self.gripper_pub.publish(msg)
 
 def main(args=None):

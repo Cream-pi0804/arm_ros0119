@@ -120,7 +120,7 @@ class IKServiceNode(Node):
             # 转换并取整
             # 关节1（范围 -600 ~ 600）
             val1 = int(round(float(np.degrees(solution[0])) * PULSE_PER_DEGREE1))
-            joint_msg.motor_1 = max(-600, min(val1, 600))
+            joint_msg.motor_1 = - max(-600, min(val1, 600))
 
             # 关节2（范围 0 ~ 10000）
             val2 = int(round(float(np.degrees(solution[1])) *2* PULSE_PER_DEGREE2))

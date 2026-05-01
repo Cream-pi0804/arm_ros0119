@@ -26,8 +26,8 @@ class ArucoTargetSelector(Node):
         # ==========================================
         # 2. ArUco 物理尺寸与字典配置
         # ==========================================
-        self.marker_length = 0.096  
-        self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_100)
+        self.marker_length = 0.05  
+        self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_1000)
         self.aruco_params = cv2.aruco.DetectorParameters()
 
         # ==========================================
@@ -35,10 +35,15 @@ class ArucoTargetSelector(Node):
         # ==========================================
         # 这是一个 4x4 的矩阵，左上角 3x3 是旋转，右上角 3x1 是平移
         self.T_base_camera = np.array([
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0 ]
+
+
+
+[-0.236196,0.937533 ,0.255426 ,-0.099227],
+ [-0.189322, 0.213425, -0.958440 ,0.670866],
+ [-0.953084 ,-0.274738, 0.127086 ,0.470987],
+ [0.000000,0.000000 ,0.000000 ,1.000000]
+
+            
         ], dtype=np.float32)
 
         # ==========================================
@@ -151,6 +156,7 @@ class ArucoTargetSelector(Node):
 
         # 4. 从结果矩阵中剥离出新的平移坐标 (X, Y, Z)
         rx, ry, rz = float(T_base_target[0, 3]), float(T_base_target[1, 3]), float(T_base_target[2, 3])
+        rx1, ry1, rz1 = float(T_camera_target[0, 3]), float(T_camera_target[1, 3]), float(T_camera_target[2, 3])
 
         # 5. 从结果矩阵中剥离出新的旋转矩阵，并转成 ROS 需要的四元数 (Quaternion)
         R_base = T_base_target[:3, :3]
@@ -180,6 +186,7 @@ class ArucoTargetSelector(Node):
         # 打印详细结果，包含欧拉角姿态以便调试
         self.get_logger().info(f"★★★ 成功锁定 ID: {target_id} ★★★")
         self.get_logger().info(f"📍 位置(米): X:{rx:.3f}, Y:{ry:.3f}, Z:{rz:.3f}")
+        self.get_logger().info(f"📍 位置(米): X1:{rx1:.3f}, Y1:{ry1:.3f}, Z1:{rz1:.3f}")
         self.get_logger().info(f"🔄 姿态(度): Roll:{roll:.1f}, Pitch:{pitch:.1f}, Yaw:{yaw:.1f}")
         self.get_logger().info(f"📐 四元数: x:{qx:.3f}, y:{qy:.3f}, z:{qz:.3f}, w:{qw:.3f}")
 

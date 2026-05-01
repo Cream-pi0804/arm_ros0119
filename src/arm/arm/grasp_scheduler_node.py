@@ -62,7 +62,7 @@ class GraspSchedulerNode(Node):
             # 步骤 2: 执行舵机闭合 (抓取)
             # ----------------------------------------
             self.get_logger().info('步骤 2: 到达目标点，执行抓取...')
-            self.control_gripper(1,5000)  # 1 表示闭合抓取 (根据你的舵机逻辑修改)
+            self.control_gripper(-2000,5000)  # 1 表示闭合抓取 (根据你的舵机逻辑修改)
             # 使用 asyncio.sleep 代替 time.sleep，不会阻塞节点其他回调
             await asyncio.sleep(1.5) 
 
@@ -83,7 +83,7 @@ class GraspSchedulerNode(Node):
             # 步骤 4: 执行舵机张开 (松开)
             # ----------------------------------------
             self.get_logger().info('步骤 4: 到达放置点，松开爪子...')
-            self.control_gripper(0,5000)  # 0 表示松开张开
+            self.control_gripper(2000,5000)  # 0 表示松开张开
             await asyncio.sleep(1.0) 
             
             self.get_logger().info('>>> 抓取放置流水线任务圆满完成！ <<<')

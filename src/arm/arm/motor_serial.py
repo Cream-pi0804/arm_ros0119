@@ -30,7 +30,7 @@ class MotorSerial(Node):
         self.last_reconnect_time = 0
         
         # --- 新增：目标角度缓存与比对容差 ---
-        self.target_angles = [0.0, 0.0, 0.0]  # 存储最近一次订阅到的目标
+        self.target_angles = [1.0, 1.0, 1.0]  # 存储最近一次订阅到的目标
         self.angle_tolerance = 2            # 到达判定容差（度）
         
         # 3. 连接串口
@@ -164,7 +164,7 @@ class MotorSerial(Node):
                 now_msg.is_reached = int(is_reached) # 确保是整数类型
                 
                 self.joint_now_pub.publish(now_msg)
-                
+                is_reached = 0
                 # 每收到 10 条数据打印一次，避免频繁打印卡顿
                 # 或者仅在到达状态切换时打印
                 self.get_logger().info(f"发布成功: [{curr_1:.2f}, {curr_2:.2f}, {curr_3:.2f}] 到达:{is_reached}")

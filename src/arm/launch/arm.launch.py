@@ -23,11 +23,17 @@ def generate_launch_description():
         executable='circular_move',
         output='log',
     )
+    zhengdh = launch_ros.actions.Node(
+        package='arm',
+        executable='zhengdh',
+        output='log',
+    )
    # 合成启动描述并返回
     launch_description = launch.LaunchDescription([
         motor_serial_node,
         solve_arm_ik_serves,
         linear_move,
-        circular_move
+        circular_move,
+        zhengdh
     ])
     return launch_description

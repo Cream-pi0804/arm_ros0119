@@ -32,6 +32,7 @@ setup(
             'circular_move=arm.circular_move:main',
             'gcode_interpreter=arm.gcode_interpreter:main',
             'grasp_scheduler_node=arm.grasp_scheduler_node:main',
+            'zhengdh=arm.zhengdh:main',
         ],
     },
 )

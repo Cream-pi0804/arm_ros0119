@@ -17,7 +17,7 @@ from scipy.optimize import minimize
 class RobotArmIK:
     """[保留 RobotArmIK 类逻辑，保持不变]"""
     def __init__(self):
-        self.bounds = [(-np.pi/2, np.pi/2), (0, np.pi/2), (0, np.pi)]
+        self.bounds = [(-np.pi/2, np.pi/2), (0, np.pi/2), (0, 3*np.pi/4)]
         self.target_pos = np.array([0, 0, 0])
         self.last_motor_1 = 0
         self.last_motor_2 = 0

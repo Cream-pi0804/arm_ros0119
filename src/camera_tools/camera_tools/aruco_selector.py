@@ -18,10 +18,10 @@ class ArucoTargetSelector(Node):
         # ==========================================
         # 1. 相机内参配置
         # ==========================================
-        self.camera_matrix = np.array([[1443.903630, 0.0, 1295.131657], 
-                                       [0.0, 1448.206356, 971.550376], 
+        self.camera_matrix = np.array([[1588.195699, 0.0, 1337.086397], 
+                                       [0.0, 1590.571819, 1051.471162], 
                                        [0.0, 0.0, 1.0]], dtype=np.float32)
-        self.dist_coeffs = np.array([0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+        self.dist_coeffs = np.array([-0.297539, 0.089308, -0.000486, 0.000289, 0.0], dtype=np.float32)
 
         # ==========================================
         # 2. ArUco 物理尺寸与字典配置
@@ -38,11 +38,10 @@ class ArucoTargetSelector(Node):
 
 
 
-[-0.236196,0.937533 ,0.255426 ,-0.099227],
- [-0.189322, 0.213425, -0.958440 ,0.670866],
- [-0.953084 ,-0.274738, 0.127086 ,0.470987],
- [0.000000,0.000000 ,0.000000 ,1.000000]
-
+[0.076650 ,-0.027080 ,0.996690 ,0.180076],
+ [0.989533 ,0.124647 ,-0.072713, -0.056977],
+ [-0.122266 ,0.991831 ,0.036351 ,0.205519],
+ [0.000000 ,0.000000 ,0.000000 ,1.000000]
             
         ], dtype=np.float32)
 
@@ -50,7 +49,7 @@ class ArucoTargetSelector(Node):
         # 4. ROS 通信接口配置
         # ==========================================
         self.bridge = CvBridge()
-        self.subscription = self.create_subscription(Image, '/raw_image', self.image_callback, 1)
+        self.subscription = self.create_subscription(Image, '/raw_image', self.image_callback, 5)
         self.target_pose_pub = self.create_publisher(Pose, '/vision/target_Pose', 10)
         self.annotated_img_pub = self.create_publisher(Image, '/processed_image', 10)
         
@@ -152,7 +151,7 @@ class ArucoTargetSelector(Node):
 
         # 3. 进行刚体变换计算
         # 目标在机械臂基座系下的矩阵 = 手眼矩阵 × 目标在相机系下的矩阵
-        T_base_target = np.dot(self.T_base_camera, T_camera_target)
+        T_base_target = np.dot(self.T_base_camera,T_camera_target )
 
         # 4. 从结果矩阵中剥离出新的平移坐标 (X, Y, Z)
         rx, ry, rz = float(T_base_target[0, 3]), float(T_base_target[1, 3]), float(T_base_target[2, 3])
@@ -172,9 +171,9 @@ class ArucoTargetSelector(Node):
         # ==========================================
         target_pose = Pose()
         # 位置
-        target_pose.position.x = rx
-        target_pose.position.y = ry
-        target_pose.position.z = rz
+        target_pose.position.x = rz1+0.204
+        target_pose.position.y = rx1+0.01
+        target_pose.position.z = ry1+0.1
         # 姿态 (由于经历了手眼矩阵相乘，现在的姿态已经是相对机械臂基座的了)
         target_pose.orientation.x = float(qx)
         target_pose.orientation.y = float(qy)
@@ -187,6 +186,7 @@ class ArucoTargetSelector(Node):
         self.get_logger().info(f"★★★ 成功锁定 ID: {target_id} ★★★")
         self.get_logger().info(f"📍 位置(米): X:{rx:.3f}, Y:{ry:.3f}, Z:{rz:.3f}")
         self.get_logger().info(f"📍 位置(米): X1:{rx1:.3f}, Y1:{ry1:.3f}, Z1:{rz1:.3f}")
+        self.get_logger().info(f"📍 位置(米): X1:{rz1+0.204:.3f}, Y1:{rx1+0.01:.3f}, Z1:{ry1+0.1:.3f}")
         self.get_logger().info(f"🔄 姿态(度): Roll:{roll:.1f}, Pitch:{pitch:.1f}, Yaw:{yaw:.1f}")
         self.get_logger().info(f"📐 四元数: x:{qx:.3f}, y:{qy:.3f}, z:{qz:.3f}, w:{qw:.3f}")
 

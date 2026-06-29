@@ -61,7 +61,7 @@ class DHPosePublisher(Node):
         """
         try:
             # 1. 逆向转换：脉冲 -> 度 -> 弧度
-            deg1 = float(msg.x) / self.PULSE_PER_DEGREE1
+            deg1 = float(msg.x) / - self.PULSE_PER_DEGREE1
             deg2 = float(msg.y) / (2 * self.PULSE_PER_DEGREE2)
             deg3 = float(msg.z) / self.PULSE_PER_DEGREE3
             

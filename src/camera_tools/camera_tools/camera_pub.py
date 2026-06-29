@@ -12,7 +12,7 @@ class CameraProviderMultiThread(Node):
         # 参数配置（可以通过 ROS 2 参数服务器修改）
         self.declare_parameter('rtsp_url', "rtsp://192.168.1.168:554/stream_0")
         self.declare_parameter('publish_topic', 'raw_image')
-        self.declare_parameter('publish_fps', 30.0)
+        self.declare_parameter('publish_fps', 20.0)
         self.declare_parameter('reconnect_delay_s', 2.0)
         
         # 获取参数

@@ -17,10 +17,10 @@ class FinalEyeToHandCalibrator(Node):
         super().__init__('final_eye_to_hand_calibrator')
         
         # --- 1. 相机与 ArUco 配置 ---
-        self.camera_matrix = np.array([[1443.903630, 0.0, 1295.131657], 
-                                       [0.0, 1448.206356, 971.550376], 
+        self.camera_matrix = np.array([[1588.195699, 0.0, 1337.086397], 
+                                       [0.0, 1590.571819, 1051.471162], 
                                        [0.0, 0.0, 1.0]], dtype=np.float32)
-        self.dist_coeffs = np.array([0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32)
+        self.dist_coeffs = np.array([-0.297539, 0.089308, -0.000486, 0.000289, 0.0], dtype=np.float32)
         self.marker_length = 0.05  
         self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_1000)
         self.aruco_params = cv2.aruco.DetectorParameters()
@@ -33,7 +33,7 @@ class FinalEyeToHandCalibrator(Node):
 
         # --- 3. ROS 通信接口 ---
         self.bridge = CvBridge()
-        self.sub_image = self.create_subscription(Image, '/raw_image', self.image_callback, 1)
+        self.sub_image = self.create_subscription(Image, '/raw_image', self.image_callback, 5)
         self.sub_dh_pose = self.create_subscription(Pose, '/dh_robot_pose', self.dh_pose_callback, 10)
 
         # 【新增】：创建对你的 IK 服务的客户端
@@ -53,11 +53,11 @@ class FinalEyeToHandCalibrator(Node):
     def generate_grid_points(self):
         """生成纯 XYZ 平移网格"""
         target_poses = []
-        grid_offsets = [-0.1, -0.05, 0.0, 0.05, 0.1]
+        grid_offsets = [-0.1,0.0,0.1]
         
-        base_x = 0.6
+        base_x = 0.75
         base_y = 0.0
-        base_z = 0.6
+        base_z = 0.3
 
         for dx in grid_offsets:
             for dy in grid_offsets:
@@ -138,14 +138,38 @@ class FinalEyeToHandCalibrator(Node):
         self.calculate_calibration()
 
     def dh_pose_callback(self, msg):
-        T = np.eye(4)
-        T[0, 3] = msg.position.x
-        T[1, 3] = msg.position.y
-        T[2, 3] = msg.position.z
+        # 1. 提取 ROS 话题中机械臂末端（法兰盘）在基座系下的位姿： T_base_end
+        T_base_end = np.eye(4)
+        T_base_end[0, 3] = msg.position.x
+        T_base_end[1, 3] = msg.position.y
+        T_base_end[2, 3] = msg.position.z
         q = [msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w]
-        T[:3, :3] = R.from_quat(q).as_matrix()
-        self.latest_dh_matrix = T
+        T_base_end[:3, :3] = R.from_quat(q).as_matrix()
 
+        # 2. 定义：末端法兰盘 -> 夹爪中标志物 的固定变换矩阵 T_end_marker
+        # =========================================================
+        # 【🚨 务必根据实际物理尺寸修改以下数值 🚨】
+        T_end_marker = np.eye(4)
+        
+        # (1) 平移偏置：假设标志物中心距离末端关节 0.1 米（10cm）
+        # 如果你的机械臂末端坐标系中，Z轴是向外指的，就在 Z 加上 0.1
+        # 如果是 X轴向外指的，就在 X 加上 0.1
+        T_end_marker[0, 3] = 0.05   # 沿 X 轴的偏移 (米)
+        T_end_marker[1, 3] = 0.0   # 沿 Y 轴的偏移 (米)
+        T_end_marker[2, 3] = 0.0   # 沿 Z 轴的偏移 (米) (假设这里是夹爪长度)
+
+        # (2) 旋转偏置：如果夹住的 ArUco 码平面和法兰盘平面不平行，需要加上旋转
+        # 例如：如果标志物相对末端关节绕 X 轴旋转了 90 度，取消下面这行的注释并修改
+        # 'yz' 表示先绕 y 轴转，再绕新生成的 z 轴转（内旋/局部坐标系）
+        T_end_marker[:3, :3] = R.from_euler('yzx', [90, 180,-90], degrees=True).as_matrix()
+        # =========================================================
+
+        # 3. 矩阵相乘，得到标志物在机械臂基座系下的真实绝对位姿 T_base_marker
+        # 公式：T_base_marker = T_base_end * T_end_marker
+        T_base_marker = np.dot(T_base_end, T_end_marker)
+
+        # 4. 更新最新矩阵供标定线程使用
+        self.latest_dh_matrix = T_base_marker
     def image_callback(self, msg):
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, 'bgr8')

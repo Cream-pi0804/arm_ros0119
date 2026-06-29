@@ -29,6 +29,7 @@ setup(
                 'aruco_detector=camera_tools.aruco_detector:main',
                 'aruco_selector=camera_tools.aruco_selector:main',
                 'shouyanbiaoding=camera_tools.shouyanbiaoding:main',
+                'shijuesifu=camera_tools.shijuesifu:main',
         ],
     },
 )

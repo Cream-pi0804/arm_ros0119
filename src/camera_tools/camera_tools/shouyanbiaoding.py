@@ -103,37 +103,81 @@ class FinalEyeToHandCalibrator(Node):
             self.get_logger().error(f"调用 IK 服务异常: {e}")
             return False
 
+    def collect_stable_sample(self, num_frames=50, timeout=3.0):
+        """在当前位置连续采集多帧视频，取众数（中位数）作为稳定样本，消除 ArUco 检测抖动"""
+        # 1. 初始稳定等待，让机械臂停稳
+        time.sleep(1.5)
+
+        # 2. 连续采集 ArUco 位姿
+        marker_poses = []
+        dh_mat = None
+        start = time.time()
+
+        while len(marker_poses) < num_frames and (time.time() - start) < timeout:
+            mm = self.latest_marker_matrix
+            dh = self.latest_dh_matrix
+            if mm is not None:
+                marker_poses.append(mm.copy())
+                if dh_mat is None:
+                    dh_mat = dh.copy() if dh is not None else None
+            time.sleep(0.02)  # ~50Hz
+
+        if len(marker_poses) < 5:
+            self.get_logger().warning(f"有效帧太少 ({len(marker_poses)} 帧), 跳过该点！")
+            return None, None
+
+        # 3. 平移部分取中位数（抗离群点）
+        positions = np.array([m[:3, 3] for m in marker_poses])
+        pos_median = np.median(positions, axis=0)
+
+        # 4. 旋转部分：转为旋转向量后取中位数，再转回旋转矩阵
+        rotvecs = np.array([R.from_matrix(m[:3, :3]).as_rotvec() for m in marker_poses])
+        rotvec_median = np.median(rotvecs, axis=0)
+        rot_median = R.from_rotvec(rotvec_median).as_matrix()
+
+        # 5. 合成稳定的 marker 位姿矩阵
+        result = np.eye(4)
+        result[:3, :3] = rot_median
+        result[:3, 3] = pos_median
+
+        dh = dh_mat if dh_mat is not None else self.latest_dh_matrix
+        if dh is None:
+            return None, None
+
+        pos_std = np.std(positions, axis=0)
+        self.get_logger().info(
+            f"众数采集完成: {len(marker_poses)} 帧 -> "
+            f"位置 std=[{pos_std[0]:.4f}, {pos_std[1]:.4f}, {pos_std[2]:.4f}]"
+        )
+        return dh, result
+
     def automated_calibration_pipeline(self):
-        time.sleep(3.0) 
+        time.sleep(3.0)
         waypoints = self.generate_grid_points()
         total_pts = len(waypoints)
-        
+
         for idx, target in enumerate(waypoints):
             self.get_logger().info(f"\n--- 进度: {idx+1}/{total_pts} ---")
-            
+
             # 1. 移动机械臂
             if not self.move_robot_via_ik(target):
                 self.get_logger().error("移动失败，放弃该点！")
                 continue
-                
-            # 2. 等待机械臂停稳，消除抖动
-            time.sleep(5.0) 
-            
-            # 3. 抓取此刻的真实数据
-            dh_mat = self.latest_dh_matrix
-            marker_mat = self.latest_marker_matrix
-            
+
+            # 2. 等待停稳 + 连续采集视频帧取众数
+            dh_mat, marker_mat = self.collect_stable_sample()
+
             if dh_mat is None:
                 self.get_logger().warning("未收到 DH 位姿，跳过！")
                 continue
             if marker_mat is None:
                 self.get_logger().warning("未识别到 ArUco 码，跳过！")
                 continue
-                
+
             self.samples_dh_robot.append(dh_mat.copy())
             self.samples_marker.append(marker_mat.copy())
             self.get_logger().info(f"✅ 数据采集成功 (有效组数: {len(self.samples_dh_robot)})")
-            
+
         self.get_logger().info("\n=== 轨迹执行完毕，开始计算眼在手外矩阵 ===")
         self.calculate_calibration()
 
